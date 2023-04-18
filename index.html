@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<title>Assistant personnel vocal</title>
+</head>
+<body>
+<h1>Assistant personnel vocal</h1>
+<p>Parlez à haute voix pour poser des questions :</p>
+<div id="transcription"></div>
+<div id="reponse"></div>
+<button id="micro">Activer le micro</button>
+
+<script src="https://cdn.jsdelivr.net/npm/@picovoice/web-voice-processor"></script>
+<script src="https://cdn.jsdelivr.net/npm/@openai/api"></script>
+
+<script>
+	// Configuration de l'API de Chat GPT
+	const openai = new OpenAI('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');
+
+
+	// Configuration de l'objet VoiceProcessor de Picovoice pour la reconnaissance vocale
+	const voiceProcessor = new Pv.WebVoiceProcessor({
+		porcupineKeyword: Pv.KEYWORDS.PICOBIRD,
+		startCallback: function () {
+			console.log('Démarrage de la reconnaissance vocale...');
+		},
+		processCallback: function (transcription) {
+			console.log('Transcription :', transcription);
+			// Appel de l'API de Chat GPT
+			openai.complete({
+				engine: 'davinci',
+				prompt: transcription,
+				maxTokens: 100,
+				n: 1,
+				stop: '\n'
+			}).then(function (response) {
+				console.log('Réponse :', response.choices[0].text);
+				// Affichage de la réponse générée par Chat GPT
+				document.getElementById('reponse').innerHTML = response.choices[0].text;
+			}).catch(function (error) {
+				console.error('Erreur lors de l\'appel de l\'API de Chat GPT :', error);
+			});
+			// Affichage de la transcription sur la page web
+			document.getElementById('transcription').innerHTML = transcription;
+		},
+		errorCallback: function (error) {
+			console.error('Erreur lors de la reconnaissance vocale :', error);
+		},
+		stopCallback: function () {
+			console.log('Arrêt de la reconnaissance vocale.');
+		}
+	});
+
+	// Activation ou désactivation de la reconnaissance vocale lors de l'appui sur le bouton
+	const microButton = document.getElementById('micro');
+	microButton.onclick = function () {
+		if (!voiceProcessor.isActive()) {
+			voiceProcessor.start();
+			microButton.innerText = 'Désactiver le micro';
+		} else {
+			voiceProcessor.stop();
+			microButton.innerText = 'Activer le micro';
+		}
+	};
+</script>
+</body>
+</html>
+
